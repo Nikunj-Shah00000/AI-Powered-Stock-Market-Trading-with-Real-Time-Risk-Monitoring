@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NVIDIA Stock Exchange Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --nvidia-green: #76b900;
+            --nvidia-dark: #000000;
+            --nvidia-light: #333333;
+            --nvidia-gray: #e6e6e6;
+            --positive: #00c853;
+            --negative: #ff3d00;
+            --warning: #ff9100;
+            --card-bg: #0d0d0d;
+            --buy-color: #00c853;
+            --sell-color: #ff3d00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--nvidia-dark);
+            color: white;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 2px solid var(--nvidia-green);
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo img {
+            height: 50px;
+            filter: brightness(0) invert(1);
+        }
+        
+        .logo h1 {
+            font-size: 28px;
+            background: linear-gradient(to right, var(--nvidia-green), #ffffff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+        
+        .last-update {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        /* Notification Bell */
+        .notification-container {
+            position: relative;
+            margin-right: 20px;
+        }
+        
+        .notification-bell {
+            position: relative;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .notification-bell:hover {
+            background-color: rgba(118, 185, 0, 0.2);
+        }
+        
+        .notification-bell.active {
+            color: var(--nvidia-green);
+            animation: bellRing 0.5s ease-in-out;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: var(--negative);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification-panel {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 400px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--nvidia-light);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .notification-panel.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .notification-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--nvidia-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notification-header h3 {
+            color: var(--nvidia-green);
+            font-size: 18px;
+        }
+        
+        .notification-clear {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .notification-clear:hover {
+            color: var(--nvidia-green);
+        }
+        
+        .notification-list {
+            padding: 0;
+        }
+        
+        .notification-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .notification-item:hover {
+            background-color: rgba(118, 185, 0, 0.05);
+        }
+        
+        .notification-item.unread {
+            background-color: rgba(118, 185, 0, 0.1);
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+            margin-top: 3px;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .notification-message {
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.4;
+        }
+        
+        .notification-time {
+            font-size: 12px;
+            color: #777;
+            margin-top: 5px;
+        }
+        
+        .notification-type-market {
+            color: var(--nvidia-green);
+        }
+        
+        .notification-type-news {
+            color: #2196f3;
+        }
+        
+        .notification-type-alert {
+            color: var(--warning);
+        }
+        
+        .notification-type-trade {
+            color: var(--positive);
+        }
+        
+        .notification-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: #777;
+        }
+        
+        .notification-settings {
+            padding: 15px 20px;
+            border-top: 1px solid var(--nvidia-light);
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        .notification-settings-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--nvidia-light);
+            color: #aaa;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .notification-settings-btn:hover {
+            border-color: var(--nvidia-green);
+            color: var(--nvidia-green);
+        }
+        
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--nvidia-light);
+            padding-bottom: 10px;
+        }
+        
+        .nav-tab {
+            padding: 10px 20px;
+            background: transparent;
+            color: #aaa;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            background-color: var(--nvidia-green);
+            color: black;
+        }
+        
+        .nav-tab:hover:not(.active) {
+            background-color: rgba(118, 185, 0, 0.2);
+            color: white;
+        }
+        
+        /* Main Dashboard */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        /* Stock Grid */
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stock-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid var(--nvidia-green);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        
+        .stock-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(118, 185, 0, 0.2);
+        }
+        
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .stock-name {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .stock-price {
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .positive {
+            color: var(--positive);
+        }
+        
+        .negative {
+            color: var(--negative);
+        }
+        
+        .stock-change {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .stock-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .risk-indicator {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .low-risk {
+            background-color: rgba(0, 200, 83, 0.2);
+            color: var(--positive);
+        }
+        
+        .medium-risk {
+            background-color: rgba(255, 145, 0, 0.2);
+            color: var(--warning);
+        }
+        
+        .high-risk {
+            background-color: rgba(255, 61, 0, 0.2);
+            color: var(--negative);
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn-buy {
+            flex: 1;
+            background-color: var(--buy-color);
+            color: black;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-buy:hover {
+            background-color: #00e676;
+        }
+        
+        .btn-sell {
+            flex: 1;
+            background-color: var(--sell-color);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-sell:hover {
+            background-color: #ff6e40;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            border: 2px solid var(--nvidia-green);
+            position: relative;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .modal-title {
+            color: var(--nvidia-green);
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background-color: #1a1a1a;
+            border: 1px solid var(--nvidia-light);
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--nvidia-green);
+        }
+        
+        .btn-pay {
+            width: 100%;
+            background-color: var(--nvidia-green);
+            color: black;
+            border: none;
+            padding: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-pay:hover {
+            background-color: #8ed100;
+        }
+        
+        /* Payment Methods */
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .payment-method {
+            padding: 15px;
+            border: 2px solid var(--nvidia-light);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .payment-method.selected {
+            border-color: var(--nvidia-green);
+            background-color: rgba(118, 185, 0, 0.1);
+        }
+        
+        .payment-method i {
+            font-size: 30px;
+            margin-bottom: 10px;
+            color: var(--nvidia-green);
+        }
+        
+        /* Buyers Page */
+        .buyers-page {
+            display: none;
+        }
+        
+        .buyers-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .buyer-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid var(--nvidia-light);
+        }
+        
+        .buyer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .buyer-name {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .buyer-rating {
+            color: #ffc107;
+        }
+        
+        .buyer-details {
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .buyer-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+        
+        .buyer-detail span:last-child {
+            color: white;
+        }
+        
+        .btn-chat {
+            width: 100%;
+            background-color: var(--nvidia-green);
+            color: black;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-chat:hover {
+            background-color: #8ed100;
+        }
+        
+        /* Chat Modal */
+        .chat-modal {
+            max-width: 800px;
+        }
+        
+        .chat-container {
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--nvidia-light);
+            margin-bottom: 15px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+        
+        .message.sent {
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .message-bubble {
+            padding: 12px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .sent .message-bubble {
+            background-color: var(--nvidia-green);
+            color: black;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .received .message-bubble {
+            background-color: var(--nvidia-light);
+            color: white;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            background-color: #1a1a1a;
+            border: 1px solid var(--nvidia-light);
+            border-radius: 5px;
+            color: white;
+        }
+        
+        .chat-input button {
+            background-color: var(--nvidia-green);
+            color: black;
+            border: none;
+            padding: 0 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        /* Risk Monitor */
+        .risk-monitor {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid var(--nvidia-light);
+        }
+        
+        .risk-monitor h2 {
+            color: var(--nvidia-green);
+            margin-bottom: 20px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Recommendations */
+        .recommendations {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 25px;
+        }
+        
+        .recommendations h2 {
+            color: var(--nvidia-green);
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        
+        /* Portfolio */
+        .portfolio-summary {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .portfolio-summary h2 {
+            color: var(--nvidia-green);
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            border-top: 1px solid var(--nvidia-light);
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        .disclaimer {
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1100px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stock-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .buyers-list {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+            
+            .notification-panel {
+                width: 320px;
+                right: -50px;
+            }
+        }
+        
+        .refresh-btn {
+            background-color: var(--nvidia-green);
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background-color: #8ed100;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-balance {
+            background-color: rgba(118, 185, 0, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
+        .page-title {
+            color: var(--nvidia-green);
+            margin-bottom: 20px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .back-btn {
+            background-color: transparent;
+            border: 1px solid var(--nvidia-green);
+            color: var(--nvidia-green);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .back-btn:hover {
+            background-color: rgba(118, 185, 0, 0.1);
+        }
+        
+        /* Animations */
+        @keyframes bellRing {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(15deg); }
+            75% { transform: rotate(-15deg); }
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--nvidia-green);
+            border-radius: 8px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            transform: translateX(120%);
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 400px;
+        }
+        
+        .toast-notification.show {
+            transform: translateX(0);
+        }
+        
+        .toast-icon {
+            font-size: 24px;
+            color: var(--nvidia-green);
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .toast-message {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .toast-close {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+        }
+        
+        /* Market News Ticker */
+        .news-ticker {
+            background-color: rgba(118, 185, 0, 0.1);
+            border: 1px solid rgba(118, 185, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .ticker-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            animation: tickerScroll 60s linear infinite;
+            white-space: nowrap;
+        }
+        
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #aaa;
+            font-size: 14px;
+        }
+        
+        .ticker-item .positive {
+            color: var(--positive);
+        }
+        
+        .ticker-item .negative {
+            color: var(--negative);
+        }
+        
+        @keyframes tickerScroll {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="50" height="50" viewBox="0 0 50 50">
+                        <rect width="50" height="50" fill="var(--nvidia-green)" rx="8"/>
+                        <text x="25" y="32" text-anchor="middle" fill="black" font-family="Arial, sans-serif" font-weight="bold" font-size="24">NV</text>
+                    </svg>
+                </div>
+                <h1>NVIDIA Stock Exchange</h1>
+            </div>
+            <div class="user-info">
+                <div class="notification-container">
+                    <button class="notification-bell" id="notification-bell">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notification-count">3</span>
+                    </button>
+                    <div class="notification-panel" id="notification-panel">
+                        <div class="notification-header">
+                            <h3><i class="fas fa-bell"></i> Notifications</h3>
+                            <button class="notification-clear" id="clear-notifications">Clear All</button>
+                        </div>
+                        <div class="notification-list" id="notification-list">
+                            <!-- Notifications will be dynamically generated here -->
+                        </div>
+                        <div class="notification-empty" id="notification-empty" style="display: none;">
+                            <i class="fas fa-bell-slash" style="font-size: 40px; margin-bottom: 10px;"></i>
+                            <p>No new notifications</p>
+                        </div>
+                        <div class="notification-settings">
+                            <button class="notification-settings-btn" id="notification-settings">
+                                <i class="fas fa-cog"></i> Notification Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="user-balance">
+                    <i class="fas fa-wallet"></i> Balance: $<span id="user-balance">25,430.50</span>
+                </div>
+                <div class="last-update">Last updated: <span id="update-time">Loading...</span></div>
+                <button class="refresh-btn" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </header>
+        
+        <!-- Market News Ticker -->
+        <div class="news-ticker">
+            <div class="ticker-content" id="ticker-content">
+                <!-- Ticker items will be dynamically generated here -->
+            </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-page="dashboard">Dashboard</button>
+            <button class="nav-tab" data-page="portfolio">My Portfolio</button>
+            <button class="nav-tab" data-page="buyers">Active Buyers</button>
+        </div>
+        
+        <!-- Main Dashboard (Default Page) -->
+        <div id="dashboard-page" class="page-content">
+            <div class="dashboard">
+                <div>
+                    <h2 class="page-title"><i class="fas fa-chart-line"></i> Real-Time Stock Monitor</h2>
+                    <div class="stock-grid" id="stock-grid">
+                        <!-- Stock cards will be dynamically generated here -->
+                    </div>
+                    
+                    <div class="recommendations">
+                        <h2><i class="fas fa-lightbulb"></i> Recommended Alternative Stocks</h2>
+                        <div class="rec-list" id="recommendations-list">
+                            <!-- Recommendations will be dynamically generated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="risk-monitor">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Risk Monitor</h2>
+                    <div id="risk-metrics">
+                        <!-- Risk metrics will be dynamically generated here -->
+                    </div>
+                    <div style="margin-top: 30px; padding: 15px; background: rgba(255, 145, 0, 0.1); border-radius: 8px; border-left: 4px solid var(--warning);">
+                        <h3 style="color: var(--warning); margin-bottom: 10px;"><i class="fas fa-info-circle"></i> Risk Assessment</h3>
+                        <p style="font-size: 14px;">Based on current volatility, volume, and market trends. Higher risk indicates greater potential price fluctuation. Consider diversifying with our recommended alternatives.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Portfolio Page -->
+        <div id="portfolio-page" class="page-content" style="display: none;">
+            <div class="portfolio-summary">
+                <h2><i class="fas fa-chart-pie"></i> My Investment Portfolio</h2>
+                <p>Total Portfolio Value: <strong style="color: var(--nvidia-green); font-size: 24px;">$32,567.89</strong></p>
+                <p>Today's Change: <span class="positive">+$423.67 (+1.32%)</span></p>
+            </div>
+            
+            <h2 class="page-title"><i class="fas fa-boxes"></i> My Holdings</h2>
+            <div class="stock-grid" id="portfolio-grid">
+                <!-- Portfolio holdings will be dynamically generated here -->
+            </div>
+        </div>
+        
+        <!-- Buyers Page -->
+        <div id="buyers-page" class="page-content" style="display: none;">
+            <button class="back-btn" id="back-to-dashboard">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+            
+            <h2 class="page-title"><i class="fas fa-users"></i> Interested Buyers for <span id="sell-stock-name">TCS</span></h2>
+            <p style="margin-bottom: 25px; color: #aaa;">Contact buyers directly to negotiate sale terms. All transactions are secured by NVIDIA Stock Exchange.</p>
+            
+            <div class="buyers-list" id="buyers-list">
+                <!-- Buyers will be dynamically generated here -->
+            </div>
+        </div>
+        
+        <!-- Payment Modal -->
+        <div class="modal" id="payment-modal">
+            <div class="modal-content">
+                <button class="close-modal" id="close-payment-modal">&times;</button>
+                <h2 class="modal-title"><i class="fas fa-credit-card"></i> Complete Purchase</h2>
+                
+                <div class="form-group">
+                    <label>Stock</label>
+                    <input type="text" id="payment-stock" class="form-control" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>Current Price</label>
+                    <input type="text" id="payment-price" class="form-control" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="payment-quantity" class="form-control" value="10" min="1" max="1000">
+                </div>
+                
+                <div class="form-group">
+                    <label>Total Amount</label>
+                    <input type="text" id="payment-total" class="form-control" readonly>
+                </div>
+                
+                <h3 style="margin: 20px 0 10px; color: var(--nvidia-green);">Select Payment Method</h3>
+                <div class="payment-methods">
+                    <div class="payment-method selected" data-method="card">
+                        <i class="fas fa-credit-card"></i>
+                        <div>Credit Card</div>
+                    </div>
+                    <div class="payment-method" data-method="paypal">
+                        <i class="fab fa-paypal"></i>
+                        <div>PayPal</div>
+                    </div>
+                    <div class="payment-method" data-method="crypto">
+                        <i class="fas fa-coins"></i>
+                        <div>Crypto</div>
+                    </div>
+                </div>
+                
+                <button class="btn-pay" id="confirm-payment">
+                    <i class="fas fa-lock"></i> Pay Securely
+                </button>
+                
+                <p style="margin-top: 15px; font-size: 12px; color: #aaa; text-align: center;">
+                    <i class="fas fa-shield-alt"></i> Secured by NVIDIA Encrypted Payment Gateway
+                </p>
+            </div>
+        </div>
+        
+        <!-- Chat Modal -->
+        <div class="modal" id="chat-modal">
+            <div class="modal-content chat-modal">
+                <button class="close-modal" id="close-chat-modal">&times;</button>
+                
+                <div class="chat-header">
+                    <h2 class="modal-title" id="chat-with-buyer"><i class="fas fa-comments"></i> Chat with <span id="buyer-chat-name">John Doe</span></h2>
+                    <p id="chat-stock-info" style="color: #aaa;">Negotiating sale of TCS shares</p>
+                </div>
+                
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    
+                    <div class="chat-input">
+                        <input type="text" id="chat-input" placeholder="Type your message here...">
+                        <button id="send-message"><i class="fas fa-paper-plane"></i> Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Success Modal -->
+        <div class="modal" id="success-modal">
+            <div class="modal-content">
+                <button class="close-modal" id="close-success-modal">&times;</button>
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 60px; color: var(--nvidia-green); margin-bottom: 20px;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 class="modal-title">Transaction Successful!</h2>
+                    <p style="margin: 20px 0; font-size: 18px;" id="success-message">Your purchase has been completed successfully.</p>
+                    <button class="btn-pay" id="close-success-btn" style="max-width: 200px; margin: 0 auto;">
+                        <i class="fas fa-thumbs-up"></i> OK
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Toast Notification -->
+        <div class="toast-notification" id="toast-notification">
+            <div class="toast-icon">
+                <i class="fas fa-bell" id="toast-icon"></i>
+            </div>
+            <div class="toast-content">
+                <div class="toast-title" id="toast-title">Market Alert</div>
+                <div class="toast-message" id="toast-message">New notification received</div>
+            </div>
+            <button class="toast-close" id="toast-close">&times;</button>
+        </div>
+        
+        <footer>
+            <p>NVIDIA Stock Exchange Platform | Real-time trading with AI-powered insights</p>
+            <p class="disclaimer">Disclaimer: This is a simulation for demonstration purposes only. Stock data is simulated and not real-time. This is not financial advice. Always consult with a qualified financial advisor before making investment decisions.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Stock data with initial values and risk levels
+        const stocks = {
+            "TCS": { price: 3512.45, change: 1.25, changePercent: 0.36, volume: "3.2M", risk: "low" },
+            "Infosys": { price: 1425.80, change: -5.20, changePercent: -0.36, volume: "5.1M", risk: "low" },
+            "HCLTech": { price: 1280.50, change: 12.75, changePercent: 1.01, volume: "2.8M", risk: "medium" },
+            "Wipro": { price: 415.25, change: -2.30, changePercent: -0.55, volume: "4.3M", risk: "medium" },
+            "Google": { price: 172.45, change: 1.85, changePercent: 1.08, volume: "28.5M", risk: "medium" },
+            "Microsoft": { price: 420.72, change: 3.15, changePercent: 0.75, volume: "22.1M", risk: "low" },
+            "Amazon": { price: 178.89, change: -1.20, changePercent: -0.67, volume: "35.7M", risk: "medium" },
+            "Tech Mahindra": { price: 1215.60, change: 8.40, changePercent: 0.70, volume: "1.9M", risk: "high" },
+            "LTIMindtree": { price: 5250.75, change: 42.25, changePercent: 0.81, volume: "0.8M", risk: "medium" },
+            "Persistent Systems": { price: 8720.40, change: 125.60, changePercent: 1.46, volume: "0.3M", risk: "high" },
+            "Mphasis": { price: 2415.30, change: -15.70, changePercent: -0.65, volume: "0.9M", risk: "medium" },
+            "Coforge": { price: 5125.80, change: 32.40, changePercent: 0.64, volume: "0.4M", risk: "medium" }
+        };
+        
+        // Portfolio holdings (user's current stocks)
+        const portfolio = {
+            "TCS": { shares: 15, avgPrice: 3450.00 },
+            "Microsoft": { shares: 8, avgPrice: 410.50 },
+            "Google": { shares: 12, avgPrice: 168.30 },
+            "NVIDIA": { shares: 5, avgPrice: 450.00 }
+        };
+        
+        // Recommended alternative stocks
+        const recommendations = [
+            { name: "NVIDIA", reason: "AI & GPU market leader with strong growth" },
+            { name: "Apple", reason: "Stable tech giant with diversified portfolio" },
+            { name: "Taiwan Semiconductor", reason: "Critical semiconductor manufacturer" },
+            { name: "Broadcom", reason: "Diversified semiconductor and infrastructure" },
+            { name: "Adobe", reason: "Strong SaaS business with consistent growth" }
+        ];
+        
+        // Risk metrics data
+        const riskMetrics = [
+            { name: "Portfolio Volatility", value: 65, level: "medium" },
+            { name: "Market Correlation", value: 82, level: "high" },
+            { name: "Sector Concentration", value: 90, level: "high" },
+            { name: "Liquidity Risk", value: 35, level: "low" },
+            { name: "Overall Risk Score", value: 68, level: "medium" }
+        ];
+        
+        // Buyers data
+        const buyers = [
+            { 
+                name: "Alex Johnson", 
+                rating: 4.9, 
+                trades: 42,
+                maxQuantity: 100,
+                priceOffered: 3520.00,
+                paymentMethod: "Bank Transfer",
+                location: "New York, USA"
+            },
+            { 
+                name: "Samantha Chen", 
+                rating: 4.7, 
+                trades: 28,
+                maxQuantity: 75,
+                priceOffered: 3505.00,
+                paymentMethod: "PayPal",
+                location: "San Francisco, USA"
+            },
+            { 
+                name: "Raj Patel", 
+                rating: 4.8, 
+                trades: 56,
+                maxQuantity: 150,
+                priceOffered: 3515.00,
+                paymentMethod: "Wire Transfer",
+                location: "Mumbai, India"
+            },
+            { 
+                name: "Michael Schmidt", 
+                rating: 5.0, 
+                trades: 89,
+                maxQuantity: 200,
+                priceOffered: 3530.00,
+                paymentMethod: "Crypto",
+                location: "Berlin, Germany"
+            },
+            { 
+                name: "David Kim", 
+                rating: 4.6, 
+                trades: 31,
+                maxQuantity: 50,
+                priceOffered: 3495.00,
+                paymentMethod: "Credit Card",
+                location: "Seoul, South Korea"
+            }
+        ];
+        
+        // Chat messages
+        const chatMessages = [
+            { sender: "buyer", text: "Hi, I'm interested in buying your shares. What's the minimum quantity you're willing to sell?", time: "10:30 AM" },
+            { sender: "user", text: "I can sell a minimum of 10 shares. How many are you looking to purchase?", time: "10:32 AM" },
+            { sender: "buyer", text: "I'd like to buy 50 shares at your asking price. Can we complete the transaction today?", time: "10:35 AM" }
+        ];
+        
+        // Notifications data
+        let notifications = [
+            {
+                id: 1,
+                type: "market",
+                title: "Market Opening Alert",
+                message: "Indian markets open higher as IT stocks lead gains",
+                time: "10 min ago",
+                unread: true,
+                icon: "fas fa-chart-line"
+            },
+            {
+                id: 2,
+                type: "news",
+                title: "NVIDIA News",
+                message: "NVIDIA announces new AI chips, stock up 3.2% in pre-market",
+                time: "25 min ago",
+                unread: true,
+                icon: "fas fa-newspaper"
+            },
+            {
+                id: 3,
+                type: "alert",
+                title: "Price Alert: TCS",
+                message: "TCS has crossed ₹3,500 level, up 1.5% today",
+                time: "1 hour ago",
+                unread: true,
+                icon: "fas fa-exclamation-triangle"
+            },
+            {
+                id: 4,
+                type: "trade",
+                title: "Trade Executed",
+                message: "Your order to buy 10 Microsoft shares has been executed at $420.50",
+                time: "2 hours ago",
+                unread: false,
+                icon: "fas fa-check-circle"
+            },
+            {
+                id: 5,
+                type: "market",
+                title: "Fed Interest Rate Decision",
+                message: "Federal Reserve holds interest rates steady, markets react positively",
+                time: "3 hours ago",
+                unread: false,
+                icon: "fas fa-landmark"
+            },
+            {
+                id: 6,
+                type: "news",
+                title: "Infosys Earnings",
+                message: "Infosys Q4 results beat estimates, shares up 4% in early trading",
+                time: "5 hours ago",
+                unread: false,
+                icon: "fas fa-chart-bar"
+            }
+        ];
+        
+        // Market news for ticker
+        const marketNews = [
+            "NVIDIA up 2.5% on strong AI demand forecast",
+            "TCS crosses ₹3,500 mark for the first time",
+            "Fed holds rates steady, signals possible cuts later this year",
+            "Indian IT stocks rally on strong quarterly results",
+            "Global markets mixed amid inflation concerns",
+            "Gold prices hit record high amid geopolitical tensions",
+            "Oil prices surge on Middle East supply concerns",
+            "Bitcoin reclaims $70,000 level as ETF inflows continue"
+        ];
+        
+        // Current stock being sold (for buyers page)
+        let currentSellStock = "TCS";
+        
+        // Function to generate stock cards
+        function generateStockCards() {
+            const stockGrid = document.getElementById('stock-grid');
+            stockGrid.innerHTML = '';
+            
+            for (const [symbol, data] of Object.entries(stocks)) {
+                const changeClass = data.change >= 0 ? 'positive' : 'negative';
+                const changeIcon = data.change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                
+                const riskClass = `${data.risk}-risk`;
+                const riskText = data.risk.charAt(0).toUpperCase() + data.risk.slice(1);
+                
+                const stockCard = document.createElement('div');
+                stockCard.className = 'stock-card';
+                stockCard.innerHTML = `
+                    <div class="stock-header">
+                        <div class="stock-name">${symbol}</div>
+                        <div class="stock-price">$${data.price.toFixed(2)}</div>
+                    </div>
+                    <div class="stock-change ${changeClass}">
+                        <i class="fas ${changeIcon}"></i>
+                        ${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)} (${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%)
+                    </div>
+                    <div class="stock-details">
+                        <div>Volume: ${data.volume}</div>
+                        <div class="risk-indicator ${riskClass}">${riskText} Risk</div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-buy" data-stock="${symbol}" data-price="${data.price}">
+                            <i class="fas fa-shopping-cart"></i> Buy
+                        </button>
+                        <button class="btn-sell" data-stock="${symbol}" data-price="${data.price}">
+                            <i class="fas fa-dollar-sign"></i> Sell
+                        </button>
+                    </div>
+                `;
+                
+                stockGrid.appendChild(stockCard);
+            }
+            
+            // Add event listeners to buy/sell buttons
+            document.querySelectorAll('.btn-buy').forEach(button => {
+                button.addEventListener('click', function() {
+                    const stock = this.getAttribute('data-stock');
+                    const price = this.getAttribute('data-price');
+                    openPaymentModal(stock, price);
+                });
+            });
+            
+            document.querySelectorAll('.btn-sell').forEach(button => {
+                button.addEventListener('click', function() {
+                    const stock = this.getAttribute('data-stock');
+                    const price = this.getAttribute('data-price');
+                    openBuyersPage(stock, price);
+                });
+            });
+        }
+        
+        // Function to generate portfolio holdings
+        function generatePortfolio() {
+            const portfolioGrid = document.getElementById('portfolio-grid');
+            portfolioGrid.innerHTML = '';
+            
+            for (const [symbol, data] of Object.entries(portfolio)) {
+                const currentPrice = stocks[symbol] ? stocks[symbol].price : (data.avgPrice * 1.05); // Estimate if not in stocks list
+                const currentValue = currentPrice * data.shares;
+                const totalCost = data.avgPrice * data.shares;
+                const profitLoss = currentValue - totalCost;
+                const profitLossPercent = (profitLoss / totalCost) * 100;
+                
+                const profitClass = profitLoss >= 0 ? 'positive' : 'negative';
+                const profitIcon = profitLoss >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                
+                const portfolioCard = document.createElement('div');
+                portfolioCard.className = 'stock-card';
+                portfolioCard.innerHTML = `
+                    <div class="stock-header">
+                        <div class="stock-name">${symbol}</div>
+                        <div class="stock-price">$${currentPrice.toFixed(2)}</div>
+                    </div>
+                    <div class="stock-change ${profitClass}">
+                        <i class="fas ${profitIcon}"></i>
+                        ${profitLoss >= 0 ? '+' : ''}${profitLoss.toFixed(2)} (${profitLossPercent >= 0 ? '+' : ''}${profitLossPercent.toFixed(2)}%)
+                    </div>
+                    <div class="stock-details">
+                        <div>Shares: ${data.shares}</div>
+                        <div>Avg Cost: $${data.avgPrice.toFixed(2)}</div>
+                    </div>
+                    <div class="stock-details">
+                        <div>Current Value: $${currentValue.toFixed(2)}</div>
+                        <div style="color: ${profitClass === 'positive' ? 'var(--positive)' : 'var(--negative)'}">
+                            ${profitLoss >= 0 ? 'Gain' : 'Loss'}
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-buy" data-stock="${symbol}" data-price="${currentPrice}">
+                            <i class="fas fa-plus-circle"></i> Buy More
+                        </button>
+                        <button class="btn-sell" data-stock="${symbol}" data-price="${currentPrice}">
+                            <i class="fas fa-dollar-sign"></i> Sell
+                        </button>
+                    </div>
+                `;
+                
+                portfolioGrid.appendChild(portfolioCard);
+            }
+            
+            // Add event listeners to portfolio buy/sell buttons
+            document.querySelectorAll('#portfolio-grid .btn-buy').forEach(button => {
+                button.addEventListener('click', function() {
+                    const stock = this.getAttribute('data-stock');
+                    const price = this.getAttribute('data-price');
+                    openPaymentModal(stock, price);
+                });
+            });
+            
+            document.querySelectorAll('#portfolio-grid .btn-sell').forEach(button => {
+                button.addEventListener('click', function() {
+                    const stock = this.getAttribute('data-stock');
+                    const price = this.getAttribute('data-price');
+                    openBuyersPage(stock, price);
+                });
+            });
+        }
+        
+        // Function to generate risk metrics
+        function generateRiskMetrics() {
+            const riskMetricsContainer = document.getElementById('risk-metrics');
+            riskMetricsContainer.innerHTML = '';
+            
+            riskMetrics.forEach(metric => {
+                const riskMetric = document.createElement('div');
+                riskMetric.className = 'risk-metric';
+                
+                // Determine color based on risk level
+                let color;
+                if (metric.level === 'low') color = '#00c853';
+                else if (metric.level === 'medium') color = '#ff9100';
+                else color = '#ff3d00';
+                
+                riskMetric.innerHTML = `
+                    <div class="risk-label">
+                        <span>${metric.name}</span>
+                        <span>${metric.value}/100</span>
+                    </div>
+                    <div class="risk-bar">
+                        <div class="risk-fill" style="width: ${metric.value}%; background-color: ${color};"></div>
+                    </div>
+                `;
+                
+                riskMetricsContainer.appendChild(riskMetric);
+            });
+        }
+        
+        // Function to generate recommendations
+        function generateRecommendations() {
+            const recommendationsList = document.getElementById('recommendations-list');
+            recommendationsList.innerHTML = '';
+            
+            recommendations.forEach(rec => {
+                const recItem = document.createElement('div');
+                recItem.className = 'stock-card';
+                recItem.innerHTML = `
+                    <div class="stock-header">
+                        <div class="stock-name">${rec.name}</div>
+                        <div class="stock-price">${getRecommendationPrice(rec.name)}</div>
+                    </div>
+                    <div class="stock-details" style="margin-top: 10px;">
+                        <div>${rec.reason}</div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn-buy" data-stock="${rec.name}" data-price="${getRecommendationPrice(rec.name, true)}">
+                            <i class="fas fa-shopping-cart"></i> Buy
+                        </button>
+                        <button class="btn-sell" data-stock="${rec.name}" data-price="${getRecommendationPrice(rec.name, true)}" disabled>
+                            <i class="fas fa-dollar-sign"></i> Sell
+                        </button>
+                    </div>
+                `;
+                
+                recommendationsList.appendChild(recItem);
+            });
+            
+            // Add event listeners to recommendation buy buttons
+            document.querySelectorAll('#recommendations-list .btn-buy').forEach(button => {
+                button.addEventListener('click', function() {
+                    const stock = this.getAttribute('data-stock');
+                    const price = this.getAttribute('data-price');
+                    openPaymentModal(stock, price);
+                });
+            });
+        }
+        
+        // Function to generate buyers list
+        function generateBuyersList() {
+            const buyersList = document.getElementById('buyers-list');
+            buyersList.innerHTML = '';
+            
+            const stockPrice = stocks[currentSellStock] ? stocks[currentSellStock].price : 3500;
+            
+            buyers.forEach((buyer, index) => {
+                const priceDifference = buyer.priceOffered - stockPrice;
+                const priceClass = priceDifference >= 0 ? 'positive' : 'negative';
+                const priceIcon = priceDifference >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                
+                const buyerCard = document.createElement('div');
+                buyerCard.className = 'buyer-card';
+                buyerCard.innerHTML = `
+                    <div class="buyer-header">
+                        <div class="buyer-name">${buyer.name}</div>
+                        <div class="buyer-rating">
+                            <i class="fas fa-star"></i> ${buyer.rating} (${buyer.trades} trades)
+                        </div>
+                    </div>
+                    
+                    <div class="buyer-details">
+                        <div class="buyer-detail">
+                            <span>Location:</span>
+                            <span>${buyer.location}</span>
+                        </div>
+                        <div class="buyer-detail">
+                            <span>Max Quantity:</span>
+                            <span>${buyer.maxQuantity} shares</span>
+                        </div>
+                        <div class="buyer-detail">
+                            <span>Price Offered:</span>
+                            <span>$${buyer.priceOffered.toFixed(2)} <span class="${priceClass}" style="font-size: 12px;">
+                                <i class="fas ${priceIcon}"></i> ${priceDifference >= 0 ? '+' : ''}${Math.abs(priceDifference).toFixed(2)}
+                            </span></span>
+                        </div>
+                        <div class="buyer-detail">
+                            <span>Preferred Payment:</span>
+                            <span>${buyer.paymentMethod}</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-chat" data-buyer-index="${index}">
+                        <i class="fas fa-comment-dots"></i> Chat with ${buyer.name.split(' ')[0]}
+                    </button>
+                `;
+                
+                buyersList.appendChild(buyerCard);
+            });
+            
+            // Add event listeners to chat buttons
+            document.querySelectorAll('.btn-chat').forEach(button => {
+                button.addEventListener('click', function() {
+                    const buyerIndex = this.getAttribute('data-buyer-index');
+                    openChatModal(buyerIndex);
+                });
+            });
+        }
+        
+        // Function to generate chat messages
+        function generateChatMessages() {
+            const chatMessagesContainer = document.getElementById('chat-messages');
+            chatMessagesContainer.innerHTML = '';
+            
+            chatMessages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${message.sender}`;
+                
+                messageDiv.innerHTML = `
+                    <div class="message-bubble">${message.text}</div>
+                    <div class="message-time">${message.time}</div>
+                `;
+                
+                chatMessagesContainer.appendChild(messageDiv);
+            });
+            
+            // Scroll to bottom of chat
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        }
+        
+        // Function to generate notifications
+        function generateNotifications() {
+            const notificationList = document.getElementById('notification-list');
+            const notificationEmpty = document.getElementById('notification-empty');
+            const notificationCount = document.getElementById('notification-count');
+            
+            // Filter unread notifications
+            const unreadNotifications = notifications.filter(n => n.unread);
+            notificationCount.textContent = unreadNotifications.length;
+            
+            if (unreadNotifications.length === 0) {
+                notificationCount.style.display = 'none';
+            } else {
+                notificationCount.style.display = 'flex';
+            }
+            
+            // If no notifications
+            if (notifications.length === 0) {
+                notificationList.innerHTML = '';
+                notificationEmpty.style.display = 'block';
+                return;
+            }
+            
+            notificationEmpty.style.display = 'none';
+            notificationList.innerHTML = '';
+            
+            // Add notifications to list
+            notifications.forEach(notification => {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = `notification-item ${notification.unread ? 'unread' : ''}`;
+                notificationItem.setAttribute('data-id', notification.id);
+                
+                notificationItem.innerHTML = `
+                    <div class="notification-icon notification-type-${notification.type}">
+                        <i class="${notification.icon}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-message">${notification.message}</div>
+                        <div class="notification-time">${notification.time}</div>
+                    </div>
+                `;
+                
+                // Add click event to mark as read
+                notificationItem.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    markNotificationAsRead(id);
+                });
+                
+                notificationList.appendChild(notificationItem);
+            });
+        }
+        
+        // Function to generate market news ticker
+        function generateMarketTicker() {
+            const tickerContent = document.getElementById('ticker-content');
+            tickerContent.innerHTML = '';
+            
+            // Create ticker items
+            marketNews.forEach(news => {
+                const tickerItem = document.createElement('div');
+                tickerItem.className = 'ticker-item';
+                
+                // Add random price change for visual effect
+                const isPositive = Math.random() > 0.4;
+                const changeClass = isPositive ? 'positive' : 'negative';
+                const changeIcon = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+                const changePercent = (Math.random() * 3).toFixed(2);
+                
+                tickerItem.innerHTML = `
+                    <span>${news}</span>
+                    <span class="${changeClass}">
+                        <i class="fas ${changeIcon}"></i> ${changePercent}%
+                    </span>
+                    <span style="color: #777;">•</span>
+                `;
+                
+                tickerContent.appendChild(tickerItem);
+            });
+        }
+        
+        // Function to get recommendation price
+        function getRecommendationPrice(stockName, numeric = false) {
+            const prices = {
+                "NVIDIA": "$950.75",
+                "Apple": "$185.20",
+                "Taiwan Semiconductor": "$98.45",
+                "Broadcom": "$865.30",
+                "Adobe": "$525.60"
+            };
+            
+            if (numeric) {
+                return parseFloat(prices[stockName].replace('$', ''));
+            }
+            
+            return prices[stockName] || "$100.00";
+        }
+        
+        // Function to update stock prices with random fluctuations
+        function updateStockPrices() {
+            for (const [symbol, data] of Object.entries(stocks)) {
+                // Generate a random change between -0.5% and +0.5%
+                const changePercent = (Math.random() - 0.5) * 1;
+                const change = (data.price * changePercent) / 100;
+                
+                // Update price and change values
+                data.price += change;
+                data.change = change;
+                data.changePercent = changePercent;
+                
+                // Randomly update volume occasionally
+                if (Math.random() > 0.7) {
+                    const volumeParts = data.volume.split('M');
+                    const volumeNum = parseFloat(volumeParts[0]);
+                    const newVolume = (volumeNum + (Math.random() - 0.5) * 0.5).toFixed(1);
+                    data.volume = newVolume > 0 ? `${newVolume}M` : data.volume;
+                }
+                
+                // Occasionally change risk level
+                if (Math.random() > 0.9) {
+                    const riskLevels = ['low', 'medium', 'high'];
+                    const currentIndex = riskLevels.indexOf(data.risk);
+                    const newIndex = Math.min(Math.max(currentIndex + (Math.random() > 0.5 ? 1 : -1), 0), 2);
+                    data.risk = riskLevels[newIndex];
+                }
+            }
+        }
+        
+        // Function to update the last updated time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateString = now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('update-time').textContent = `${dateString} ${timeString}`;
+        }
+        
+        // Function to open payment modal
+        function openPaymentModal(stock, price) {
+            document.getElementById('payment-modal').style.display = 'flex';
+            document.getElementById('payment-stock').value = stock;
+            document.getElementById('payment-price').value = `$${parseFloat(price).toFixed(2)}`;
+            updatePaymentTotal();
+        }
+        
+        // Function to open buyers page
+        function openBuyersPage(stock, price) {
+            currentSellStock = stock;
+            
+            // Update the stock name in buyers page
+            document.getElementById('sell-stock-name').textContent = stock;
+            
+            // Switch to buyers page
+            switchPage('buyers');
+            
+            // Generate buyers list
+            generateBuyersList();
+        }
+        
+        // Function to open chat modal
+        function openChatModal(buyerIndex) {
+            const buyer = buyers[buyerIndex];
+            document.getElementById('chat-modal').style.display = 'flex';
+            document.getElementById('buyer-chat-name').textContent = buyer.name;
+            document.getElementById('chat-stock-info').textContent = `Negotiating sale of ${currentSellStock} shares`;
+            
+            // Generate chat messages
+            generateChatMessages();
+        }
+        
+        // Function to update payment total
+        function updatePaymentTotal() {
+            const price = parseFloat(document.getElementById('payment-price').value.replace('$', ''));
+            const quantity = parseInt(document.getElementById('payment-quantity').value) || 0;
+            const total = price * quantity;
+            document.getElementById('payment-total').value = `$${total.toFixed(2)}`;
+        }
+        
+        // Function to switch between pages
+        function switchPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.style.display = 'none';
+            });
+            
+            // Show selected page
+            document.getElementById(`${pageName}-page`).style.display = 'block';
+            
+            // Update active tab
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-page') === pageName) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // If switching to portfolio, generate portfolio
+            if (pageName === 'portfolio') {
+                generatePortfolio();
+            }
+            
+            // If switching to dashboard, generate stock cards
+            if (pageName === 'dashboard') {
+                generateStockCards();
+            }
+        }
+        
+        // Function to mark notification as read
+        function markNotificationAsRead(id) {
+            notifications = notifications.map(notification => {
+                if (notification.id === id) {
+                    return { ...notification, unread: false };
+                }
+                return notification;
+            });
+            
+            generateNotifications();
+        }
+        
+        // Function to add a new notification
+        function addNotification(notification) {
+            // Generate unique ID
+            const maxId = notifications.length > 0 ? Math.max(...notifications.map(n => n.id)) : 0;
+            const newNotification = {
+                ...notification,
+                id: maxId + 1,
+                unread: true
+            };
+            
+            // Add to beginning of array
+            notifications.unshift(newNotification);
+            
+            // Update UI
+            generateNotifications();
+            
+            // Show toast notification
+            showToastNotification(newNotification);
+            
+            // Ring the bell
+            ringNotificationBell();
+        }
+        
+        // Function to show toast notification
+        function showToastNotification(notification) {
+            const toast = document.getElementById('toast-notification');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMessage = document.getElementById('toast-message');
+            
+            // Set content based on notification type
+            let iconClass = notification.icon;
+            let title = notification.title;
+            let message = notification.message;
+            
+            // Set icon color based on type
+            toastIcon.className = iconClass;
+            toastIcon.style.color = getNotificationColor(notification.type);
+            
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            // Show toast
+            toast.classList.add('show');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 5000);
+        }
+        
+        // Function to get notification color based on type
+        function getNotificationColor(type) {
+            switch(type) {
+                case 'market': return 'var(--nvidia-green)';
+                case 'news': return '#2196f3';
+                case 'alert': return 'var(--warning)';
+                case 'trade': return 'var(--positive)';
+                default: return 'var(--nvidia-green)';
+            }
+        }
+        
+        // Function to ring notification bell
+        function ringNotificationBell() {
+            const bell = document.getElementById('notification-bell');
+            
+            // Add active class for animation
+            bell.classList.add('active');
+            
+            // Remove active class after animation completes
+            setTimeout(() => {
+                bell.classList.remove('active');
+            }, 1000);
+        }
+        
+        // Function to generate random market notifications
+        function generateRandomNotification() {
+            const notificationTypes = [
+                {
+                    type: "market",
+                    title: "Market Update",
+                    message: `${getRandomStock()} ${Math.random() > 0.5 ? 'rises' : 'falls'} ${(Math.random() * 3).toFixed(1)}% on ${getRandomNews()}`,
+                    icon: "fas fa-chart-line"
+                },
+                {
+                    type: "news",
+                    title: "Company News",
+                    message: `${getRandomStock()} ${getRandomCompanyNews()}`,
+                    icon: "fas fa-newspaper"
+                },
+                {
+                    type: "alert",
+                    title: "Price Alert",
+                    message: `${getRandomStock()} has ${Math.random() > 0.5 ? 'crossed' : 'dropped below'} key level of $${(Math.random() * 5000).toFixed(2)}`,
+                    icon: "fas fa-exclamation-triangle"
+                },
+                {
+                    type: "market",
+                    title: "Economic News",
+                    message: `${getRandomEconomicNews()}`,
+                    icon: "fas fa-landmark"
+                }
+            ];
+            
+            const randomType = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+            const now = new Date();
+            const timeString = getRelativeTime(now);
+            
+            return {
+                ...randomType,
+                time: timeString
+            };
+        }
+        
+        // Helper function to get random stock
+        function getRandomStock() {
+            const stockSymbols = Object.keys(stocks);
+            return stockSymbols[Math.floor(Math.random() * stockSymbols.length)];
+        }
+        
+        // Helper function to get random news
+        function getRandomNews() {
+            const newsItems = [
+                "strong quarterly results",
+                "analyst upgrade",
+                "sector rotation",
+                "market volatility",
+                "economic data",
+                "global cues",
+                "insider buying",
+                "institutional interest"
+            ];
+            return newsItems[Math.floor(Math.random() * newsItems.length)];
+        }
+        
+        // Helper function to get random company news
+        function getRandomCompanyNews() {
+            const newsItems = [
+                "announces new partnership deal",
+                "beats earnings expectations",
+                "declares dividend of ₹25 per share",
+                "expands operations to new markets",
+                "launches new product line",
+                "appoints new CEO",
+                "completes acquisition",
+                "raises revenue guidance"
+            ];
+            return newsItems[Math.floor(Math.random() * newsItems.length)];
+        }
+        
+        // Helper function to get random economic news
+        function getRandomEconomicNews() {
+            const newsItems = [
+                "Inflation data comes in lower than expected",
+                "Unemployment rate drops to 4-year low",
+                "Central bank signals dovish stance",
+                "GDP growth exceeds expectations",
+                "Manufacturing PMI shows expansion",
+                "Retail sales surge in latest report",
+                "Trade deficit narrows significantly",
+                "Consumer confidence hits new high"
+            ];
+            return newsItems[Math.floor(Math.random() * newsItems.length)];
+        }
+        
+        // Helper function to get relative time
+        function getRelativeTime(date) {
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) {
+                return "Just now";
+            } else if (diffMins < 60) {
+                return `${diffMins} min ago`;
+            } else if (diffHours < 24) {
+                return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            } else {
+                return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            }
+        }
+        
+        // Function to refresh all data
+        function refreshData() {
+            updateStockPrices();
+            generateStockCards();
+            updateTime();
+            
+            // Add animation effect to refresh button
+            const refreshBtn = document.getElementById('refresh-btn');
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            refreshBtn.disabled = true;
+            
+            setTimeout(() => {
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                refreshBtn.disabled = false;
+            }, 1000);
+        }
+        
+        // Initialize the platform
+        document.addEventListener('DOMContentLoaded', function() {
+            generateStockCards();
+            generateRiskMetrics();
+            generateRecommendations();
+            generateNotifications();
+            generateMarketTicker();
+            updateTime();
+            
+            // Set up auto-refresh every 10 seconds
+            setInterval(refreshData, 10000);
+            
+            // Set up random notifications every 30-60 seconds
+            setInterval(() => {
+                if (Math.random() > 0.3) { // 70% chance to generate notification
+                    const newNotification = generateRandomNotification();
+                    addNotification(newNotification);
+                }
+            }, 30000);
+            
+            // Add event listener to refresh button
+            document.getElementById('refresh-btn').addEventListener('click', refreshData);
+            
+            // Add event listeners to navigation tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const pageName = this.getAttribute('data-page');
+                    switchPage(pageName);
+                });
+            });
+            
+            // Add event listener to back button
+            document.getElementById('back-to-dashboard').addEventListener('click', function() {
+                switchPage('dashboard');
+            });
+            
+            // Notification bell functionality
+            document.getElementById('notification-bell').addEventListener('click', function(e) {
+                e.stopPropagation();
+                const panel = document.getElementById('notification-panel');
+                panel.classList.toggle('active');
+            });
+            
+            // Clear all notifications
+            document.getElementById('clear-notifications').addEventListener('click', function() {
+                notifications = [];
+                generateNotifications();
+            });
+            
+            // Notification settings button
+            document.getElementById('notification-settings').addEventListener('click', function() {
+                alert("Notification settings would open here. You can customize alerts for price changes, news, and market updates.");
+            });
+            
+            // Close notification panel when clicking outside
+            document.addEventListener('click', function(e) {
+                const panel = document.getElementById('notification-panel');
+                const bell = document.getElementById('notification-bell');
+                
+                if (!panel.contains(e.target) && !bell.contains(e.target)) {
+                    panel.classList.remove('active');
+                }
+            });
+            
+            // Close toast notification
+            document.getElementById('toast-close').addEventListener('click', function() {
+                document.getElementById('toast-notification').classList.remove('show');
+            });
+            
+            // Payment modal functionality
+            document.getElementById('close-payment-modal').addEventListener('click', function() {
+                document.getElementById('payment-modal').style.display = 'none';
+            });
+            
+            document.getElementById('payment-quantity').addEventListener('input', updatePaymentTotal);
+            
+            // Payment method selection
+            document.querySelectorAll('.payment-method').forEach(method => {
+                method.addEventListener('click', function() {
+                    document.querySelectorAll('.payment-method').forEach(m => {
+                        m.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                });
+            });
+            
+            // Confirm payment
+            document.getElementById('confirm-payment').addEventListener('click', function() {
+                const stock = document.getElementById('payment-stock').value;
+                const quantity = document.getElementById('payment-quantity').value;
+                const total = document.getElementById('payment-total').value;
+                const method = document.querySelector('.payment-method.selected').getAttribute('data-method');
+                
+                // Close payment modal
+                document.getElementById('payment-modal').style.display = 'none';
+                
+                // Show success modal
+                document.getElementById('success-modal').style.display = 'flex';
+                document.getElementById('success-message').textContent = 
+                    `You have successfully purchased ${quantity} shares of ${stock} for ${total} via ${method}.`;
+                
+                // Add a trade notification
+                addNotification({
+                    type: "trade",
+                    title: "Trade Confirmed",
+                    message: `Your purchase of ${quantity} ${stock} shares has been completed.`,
+                    time: "Just now",
+                    icon: "fas fa-check-circle"
+                });
+            });
+            
+            // Chat modal functionality
+            document.getElementById('close-chat-modal').addEventListener('click', function() {
+                document.getElementById('chat-modal').style.display = 'none';
+            });
+            
+            // Send chat message
+            document.getElementById('send-message').addEventListener('click', function() {
+                const input = document.getElementById('chat-input');
+                const message = input.value.trim();
+                
+                if (message) {
+                    // Add user message
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message sent';
+                    messageDiv.innerHTML = `
+                        <div class="message-bubble">${message}</div>
+                        <div class="message-time">${timeString}</div>
+                    `;
+                    
+                    document.getElementById('chat-messages').appendChild(messageDiv);
+                    
+                    // Clear input
+                    input.value = '';
+                    
+                    // Scroll to bottom
+                    const chatMessagesContainer = document.getElementById('chat-messages');
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                    
+                    // Simulate buyer response after 1 second
+                    setTimeout(() => {
+                        const responses = [
+                            "That sounds reasonable. Can we proceed with 50 shares at that price?",
+                            "I can do that. Please send me the contract details.",
+                            "Let me check my funds and I'll get back to you in 5 minutes.",
+                            "Perfect! I'll initiate the payment now.",
+                            "Can we make it 55 shares? I have extra funds available."
+                        ];
+                        
+                        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                        const responseTime = new Date();
+                        const responseTimeString = responseTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        
+                        const responseDiv = document.createElement('div');
+                        responseDiv.className = 'message received';
+                        responseDiv.innerHTML = `
+                            <div class="message-bubble">${randomResponse}</div>
+                            <div class="message-time">${responseTimeString}</div>
+                        `;
+                        
+                        document.getElementById('chat-messages').appendChild(responseDiv);
+                        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                    }, 1000);
+                }
+            });
+            
+            // Chat input enter key
+            document.getElementById('chat-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('send-message').click();
+                }
+            });
+            
+            // Success modal functionality
+            document.getElementById('close-success-modal').addEventListener('click', function() {
+                document.getElementById('success-modal').style.display = 'none';
+            });
+            
+            document.getElementById('close-success-btn').addEventListener('click', function() {
+                document.getElementById('success-modal').style.display = 'none';
+            });
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', function(event) {
+                const paymentModal = document.getElementById('payment-modal');
+                const chatModal = document.getElementById('chat-modal');
+                const successModal = document.getElementById('success-modal');
+                
+                if (event.target === paymentModal) {
+                    paymentModal.style.display = 'none';
+                }
+                
+                if (event.target === chatModal) {
+                    chatModal.style.display = 'none';
+                }
+                
+                if (event.target === successModal) {
+                    successModal.style.display = 'none';
+                }
+            });
+            
+            // Add initial welcome notification
+            setTimeout(() => {
+                addNotification({
+                    type: "news",
+                    title: "Welcome to NVIDIA Stock Exchange",
+                    message: "You're now connected to real-time market data and notifications. Stay updated with the latest market movements.",
+                    time: "Just now",
+                    icon: "fas fa-rocket"
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
